@@ -1,0 +1,111 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
+
+namespace five
+{
+    public partial class Form1 : Form
+    {
+        List<GasPrice> gasPrices = new List<GasPrice>();
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            GasPrice newGasPrice = new GasPrice();
+            newGasPrice.Month = comboBox1.Text;
+            newGasPrice.Brand = comboBox2.Text;
+            newGasPrice.Price = Convert.ToDecimal(textBox1.Text);
+            gasPrices.Add(newGasPrice);
+            // добавление данных в таблицу
+            // проверка наличия столбцов в таблице перед добавлением записи
+            if (dataGridView1.Columns.Count == 0)
+            {
+                // Добавление необходимых столбцов в таблицу в случае их отсутствия
+                dataGridView1.Columns.Add("Month", "Month");
+                dataGridView1.Columns.Add("Price", "Price");
+                dataGridView1.Columns.Add("Brand", "Brand");
+            }
+            dataGridView1.Rows.Add(new object[] { newGasPrice.Month, newGasPrice.Price, newGasPrice.Brand });
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            // запись данных в файл gas_prices.txt
+            using (StreamWriter file = new StreamWriter("gas_prices.txt"))
+            {
+                foreach (GasPrice gasPrice in gasPrices)
+                {
+                    file.WriteLine($"{gasPrice.Month},{gasPrice.Brand},{gasPrice.Price}");
+                }
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            // чтение данных из файла data.txt
+            string[] lines = File.ReadAllLines("data.txt");
+            foreach (string line in lines)
+            {
+                string[] parts = line.Split(',');
+                GasPrice gasPrice = new GasPrice();
+                gasPrice.Month = parts[0];
+                gasPrice.Brand = parts[1];
+                gasPrice.Price = Convert.ToDecimal(parts[2]);
+                gasPrices.Add(gasPrice);
+                // проверка наличия столбцов в таблице перед добавлением записи
+                if (dataGridView1.Columns.Count == 0)
+                {
+                    // Добавление необходимых столбцов в таблицу в случае их отсутствия
+                    dataGridView1.Columns.Add("Month", "Month");
+                    dataGridView1.Columns.Add("Price", "Price");
+                    dataGridView1.Columns.Add("Brand", "Brand");
+                }
+                dataGridView1.Rows.Add(new object[] { gasPrice.Month, gasPrice.Price, gasPrice.Brand });
+            }
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            // очистка существующей диаграммы
+            chart1.Series.Clear();
+            Series series = new Series();
+            series.ChartType = SeriesChartType.Column;
+            // перебор каждой строки в DataGridView
+            foreach (DataGridViewRow row in dataGridView1.Rows)
+            {
+                // проверка, что строка не пустая
+                if (!row.IsNewRow)
+                {
+                    // получение данных из ячеек DataGridView
+                    string month = row.Cells[0].Value != null ? row.Cells[0].Value.ToString() : "";
+                    decimal price = row.Cells[1].Value != null ? Convert.ToDecimal(row.Cells[1].Value) : 0;
+                    // добавление точки данных в серию диаграммы
+                    series.Points.AddXY(month, price);
+                }
+            }
+
+            // добавление серии на диаграмму
+            chart1.Series.Add(series);
+            // обновление диаграммы
+            chart1.Invalidate();
+        }
+
+        private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!(char.IsDigit(e.KeyChar)) || (char.IsControl(e.KeyChar)))
+                e.Handled = true;
+        }
+    }
+}
+
+class GasPrice
+{
+    public string Month { get; set; }
+    public string Brand { get; set; }
+    public decimal Price { get; set; }
+}
