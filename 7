@@ -1,0 +1,289 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.IO;
+using System.Text;
+using System.Windows.Forms;
+using System.Xml;
+using Microsoft.VisualBasic;
+
+namespace лаб7
+{
+    public partial class Form1 : Form
+    { 
+        bool DevMode = false;
+        string password = "admin";
+        public victorina gw = null;
+        public Form1()
+        {
+            InitializeComponent();
+            if (!Directory.Exists("Images")) Directory.CreateDirectory("Images");
+            LoadThemes();
+        }
+
+        private void LoadThemes()
+        {
+            comboBoxThemes.Items.Clear();
+            ThemeBoxAdmin.Items.Clear();
+            XmlDocument doc = new XmlDocument();
+            doc.Load("Data.xml"); // Загрузка XML-файла с данными 
+
+            XmlNodeList themeNodes = doc.SelectNodes("//Themes/Theme/Name"); // Получение списка названий тем
+
+            foreach (XmlNode node in themeNodes)
+            {
+                string themeName = node.InnerText;
+                comboBoxThemes.Items.Add(themeName); // Добавление названий тем в выпадающий список
+                ThemeBoxAdmin.Items.Add(themeName);
+            }
+
+            comboBoxThemes.Text = themeNodes[0].InnerText;
+        }
+
+        private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (tabControl1.SelectedTab == tabPage1) { }
+            else if (tabControl1.SelectedTab == tabPage2) // Проверяем, что выбрана первая вкладка
+            {
+                string userinput = Interaction.InputBox("Введите пароль:", "Пароль администратора", "");
+                if (userinput != password && !DevMode)
+                {
+                    Error("Неправильный пароль!");
+                    tabControl1.SelectTab(tabPage1);
+                }
+                else DifficultyList.Items.AddRange(GetSelectedLevelNode());
+            }
+
+             string[] GetSelectedLevelNode()
+            {
+                List<string> difficulty = new List<string>();
+                XmlDocument doc = new XmlDocument();
+                doc.Load("Data.xml"); // Загрузка XML-файла с данными 
+
+                XmlNodeList difficultyNodes = doc.SelectNodes("//Themes/Theme/Level"); // Получение списка сложности
+
+                for (int i = 0; i < difficultyNodes.Count; i++)
+                    difficulty.Add("Уровень сложности " + (i + 1)); // Добавление названий тем в выпадающий список
+                return difficulty.ToArray();
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            XmlDocument doc = new XmlDocument();
+            if (string.IsNullOrEmpty(txtQuestionText.Text) || string.IsNullOrEmpty(txtHint.Text) || txtImagePath.Text == "Тут будет путь к картинке"
+                || string.IsNullOrEmpty(DifficultyList.Text) || string.IsNullOrEmpty(ThemeBoxAdmin.Text) || lstAnswers.RowCount == 0)
+            {
+                Error("Не все данные введены");
+            }
+            doc.Load("Data.xml"); // Загрузка XML-файла
+            if (ThemeBoxAdmin.Items.Contains(ThemeBoxAdmin.Text) && !DifficultyList.Items.Contains(DifficultyList.Text))
+            {
+                XmlNode themesNode = doc.SelectSingleNode("/Data/Themes");
+
+                // Находим тему по индексу (например, индекс 0 для первой темы)
+                XmlNode targetThemeNode = themesNode.SelectNodes("Theme")[ThemeBoxAdmin.SelectedIndex];
+
+                // Создаем новый уровень сложности
+                XmlNode newLevelNode = doc.CreateElement("Level");
+
+                // Создаем узел Difficulty и устанавливаем его значение
+                XmlNode difficultyNode = doc.CreateElement("Difficulty");
+                difficultyNode.InnerText = DifficultyList.Text;
+                newLevelNode.AppendChild(difficultyNode);
+
+                // Добавляем новый уровень сложности к выбранной теме
+                targetThemeNode.AppendChild(newLevelNode);
+
+            }
+            else if (!ThemeBoxAdmin.Items.Contains(ThemeBoxAdmin.Text))
+            {
+                XmlNode themesNode = doc.SelectSingleNode("/Data/Themes");
+
+                // Создаем новую тему
+                XmlNode newThemeNode = doc.CreateElement("Theme");
+
+                // Создаем узел Name и устанавливаем его значение
+                XmlNode nameNode = doc.CreateElement("Name");
+                nameNode.InnerText = ThemeBoxAdmin.Text;
+                newThemeNode.AppendChild(nameNode);
+
+                // Добавляем новую тему к узлу Themes
+                themesNode.AppendChild(newThemeNode);
+                doc.Save("Data.xml");
+                LoadThemes();
+            }
+            else
+            {
+                // Создание нового элемента Question
+                XmlElement question = doc.CreateElement("Question");
+
+                // Создание элементов для текста вопроса, изображения, подсказки и ответов
+                XmlElement text = doc.CreateElement("Text");
+                text.InnerText = txtQuestionText.Text;
+                question.AppendChild(text);
+
+                XmlElement image = doc.CreateElement("Image");
+                File.Copy(txtImagePath.Text, "Images");
+                image.InnerText = "Images/" + Path.GetFileName(txtImagePath.Text);
+                question.AppendChild(image);
+
+                XmlElement hint = doc.CreateElement("Hint");
+                hint.InnerText = txtHint.Text;
+                question.AppendChild(hint);
+
+                XmlElement answers = doc.CreateElement("Answers");
+
+                for (int i = 0; i < lstAnswers.RowCount - 1; i++)
+                {
+                    XmlElement answerElem = doc.CreateElement("Answer");
+                    DataGridViewCell cella = lstAnswers.Rows[i].Cells[0];
+                    answerElem.InnerText = cella.Value.ToString();
+
+                    XmlElement correctElem = doc.CreateElement("IsCorrect");
+                    DataGridViewCell celle = lstAnswers.Rows[i].Cells[1];
+                    string cor = "false";
+                    if (celle.Value != null) cor = "true";
+                    correctElem.InnerText = cor;
+
+                    answers.AppendChild(answerElem);
+                    answers.AppendChild(correctElem);
+                }
+                question.AppendChild(answers);
+
+                XmlNode themeNode = doc.SelectNodes("//Themes")[ThemeBoxAdmin.SelectedIndex];
+
+                // Добавление нового вопроса к выбранному уровню сложности в выбранной теме
+                XmlNode selectedLevel = themeNode.SelectNodes("//Level")[DifficultyList.SelectedIndex];// Функция для получения узла выбранного уровня сложности
+                selectedLevel.AppendChild(question);
+                doc.Save("Data.xml");
+            }
+
+            lstAnswers.Rows.Clear();
+            // Сохранение изменений в XML-файле
+        }
+
+        void Error(string mes)
+        {
+            DialogResult result = MessageBox.Show(
+        mes,
+        "Внимание",
+        MessageBoxButtons.OK,
+        MessageBoxIcon.Warning,
+        MessageBoxDefaultButton.Button1,
+        MessageBoxOptions.DefaultDesktopOnly);
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            if (openFileDialog1.ShowDialog() == DialogResult.OK) txtImagePath.Text = openFileDialog1.FileName;
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.TopicIndex = comboBoxThemes.SelectedIndex;
+            if (gw == null)
+            {
+                victorina chImg = new victorina(this);
+                chImg.Tag = this;
+                chImg.Show();
+                gw = chImg;
+                Hide();
+            }
+        }
+
+        private void tabPage1_Click(object sender, EventArgs e)
+        {
+            if (comboBox1.Text != "admin")
+                tabControl1.Enabled = false;
+        }
+    }
+}
+
+class Level
+{
+    public string Difficulty { get; set; }
+    public List<Question> Questions { get; set; }
+
+    public Level(string difficulty)
+    {
+        Difficulty = difficulty;
+        Questions = new List<Question>();
+    }
+}
+
+class Question
+{
+    public string Text { get; set; }
+    public string Image { get; set; }
+    public string Hint { get; set; }
+    public List<Answer> Answers { get; set; }
+
+    public Question(string text, string image, string hint)
+    {
+        Text = text;
+        Image = image;
+        Hint = hint;
+        Answers = new List<Answer>();
+    }
+}
+
+class Topic
+{
+    public string Name { get; set; }
+    public List<Level> Levels { get; set; }
+
+    public Topic(string name)
+    {
+        Name = name;
+        Levels = new List<Level>();
+    }
+}
+
+static class XMLPathFind
+{
+    public static string FindXPath(XmlNode node)
+    {
+        StringBuilder builder = new StringBuilder();
+        while (node != null)
+        {
+            switch (node.NodeType)
+            {
+                case XmlNodeType.Attribute:
+                    builder.Insert(0, "/@" + node.Name);
+                    node = ((XmlAttribute)node).OwnerElement;
+                    break;
+                case XmlNodeType.Element:
+                    int index = FindElementIndex((XmlElement)node);
+                    builder.Insert(0, "/" + node.Name);
+                    node = node.ParentNode;
+                    break;
+                case XmlNodeType.Document:
+                    return builder.ToString();
+                default:
+                    throw new ArgumentException("Only elements and attributes are supported");
+            }
+        }
+        throw new ArgumentException("Node was not in a document");
+    }
+
+    public static int FindElementIndex(XmlElement element)
+    {
+        XmlNode parentNode = element.ParentNode;
+        if (parentNode is XmlDocument) return 1;
+        XmlElement parent = (XmlElement)parentNode;
+        int index = 1;
+        foreach (XmlNode candidate in parent.ChildNodes)
+        {
+            if (candidate is XmlElement && candidate.Name == element.Name)
+            {
+                if (candidate == element) return index;
+                index++;
+            }
+        }
+        throw new ArgumentException("Couldn't find element within parent");
+    }
+}
