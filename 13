@@ -1,0 +1,166 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace lab_13
+{
+    public partial class Form1 : Form
+    {
+        // объявление переменных и создание таймера
+        private int x, y;
+        private int step = 5;
+        private bool clockwise = true;
+        private Timer timer = new Timer();
+        private Color shapeColor = Color.Black;
+
+        // обработчик события таймера для движения ромба
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            Graphics g = CreateGraphics(); // создание графического объекта и определение вершин ромба
+            Pen pen = new Pen(Color.Black, 2);
+            Point[] points = new Point[4];
+
+            if (clockwise)  // перемещение ромба и отрисовка новой позиции
+            {
+                x += step;
+                y += step;
+            }
+            else
+            {
+                x -= step;
+                y -= step;
+            }
+
+            points[0] = new Point(x, y + 50);
+            points[1] = new Point(x + 50, y);
+            points[2] = new Point(x, y - 50);
+            points[3] = new Point(x - 50, y);
+
+            // очистка экрана и отрисовка ромба
+            g.Clear(BackColor);
+            g.DrawPolygon(pen, points);
+
+            pen.Dispose();
+            g.Dispose();
+        }
+
+
+        // установка начальной позиции ромба и запуск таймера
+        public Form1()
+        {
+            InitializeComponent();
+            x = ClientSize.Width / 2 - 50;
+            y = ClientSize.Height / 2 - 50;
+
+            timer.Interval = 50;
+            timer.Tick += timer1_Tick;
+            timer.Start();
+        }
+
+        public void SetShapeColor(Color color)
+        {
+            // присвоение выбранного цвета фигуре.
+            shapeColor = color;
+            // перерисовка формы для отображения изменений.
+            Invalidate();
+        }
+
+
+        // обработчик нажатия кнопки "Настройки"
+        private void button2_Click(object sender, EventArgs e)
+        {
+             SettingsForm settingsForm = new SettingsForm(); // открытие окна настроек и применение изменений
+             settingsForm.Owner = this; // установка текущей формы как владельца
+             DialogResult result = settingsForm.ShowDialog();
+
+            if (result == DialogResult.OK)
+            {
+                step = settingsForm.Speed;
+                clockwise = settingsForm.Clockwise;
+                Invalidate();
+            }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            // остановить таймер, чтобы ромб перестал двигаться.
+            timer.Stop();
+        }
+
+        // переопределенный метод для обработки клавиатурного ввода
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == Keys.Escape)  // выход из приложения при нажатии клавиши Esc
+            {
+                Application.Exit();
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void MoveDiamond()
+        {
+            Graphics g = CreateGraphics();
+            Pen pen = new Pen(shapeColor, 2);
+            Point[] points = new Point[4];
+        }
+    }
+}
+
+    public partial class SettingsForm : Form
+    {// переменные для хранения данных настроек
+        public int Speed { get; set; }
+        public bool Clockwise { get; set; }
+        Color shapeColor;
+        int shapeSize;
+        bool clockwise;
+
+        public SettingsForm()
+        {
+            InitializeComponent();
+            shapeColor = Color.Red;
+            shapeSize = 50;
+            clockwise = true;
+
+            trackBar1.Minimum = 1;
+            trackBar1.Maximum = 10;
+            trackBar1.Value = 5;
+
+            trackBar2.Minimum = 20;
+            trackBar2.Maximum = 100;
+            trackBar2.Value = shapeSize;
+
+            radioButton1.Checked = true;
+
+            button1.Click += new EventHandler(button1_Click);
+            button2.Click += new EventHandler(button2_Click);
+        }
+        // установка выбранных настроек и закрытие формы
+        private void button1_Click(object sender, EventArgs e)
+        {
+            // отображение диалога выбора цвета и применение выбранного цвета к фигуре на главной форме.
+            ColorDialog colorDialog = new ColorDialog();
+            if (colorDialog.ShowDialog() == DialogResult.OK)
+            {
+                // применение выбранного цвета к рисуемой фигуре на главной форме.
+                Form1 mainForm = (Form1)this.Owner;
+                mainForm.SetShapeColor(colorDialog.Color);
+                if (mainForm != null)
+                {
+                    mainForm.SetShapeColor(colorDialog.Color);
+                }
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            shapeSize = trackBar2.Value;
+            clockwise = radioButton1.Checked;
+        }
+    }
+}
