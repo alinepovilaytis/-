@@ -1,0 +1,327 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace лаб3
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+            pictureBox1.Paint += new PaintEventHandler(pictureBox1_Paint);
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            int len = int.Parse(textBox1.Text);
+            int wei = int.Parse(textBox2.Text);
+            int ang = int .Parse(textBox3.Text);
+            if (radioButton1.Checked == true)
+            {
+                parallelogram par = new parallelogram(len, wei, ang);
+                par.Draw(len, wei, pictureBox1);
+            }
+            else if (radioButton2.Checked == true)
+            {
+                trapeze tr = new trapeze(len, wei, ang);
+                tr.Draw(len, wei, pictureBox1);
+            }
+            else
+            {
+                rectangle rect = new rectangle(len, wei);
+                rect.Draw(len, wei, pictureBox1);
+            }
+        }
+
+        private void radioButton1_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButton1.Checked)
+                textBox3.Enabled = true;
+            else
+                textBox3.Enabled = false;
+        }
+
+        private void radioButton2_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButton2.Checked)
+                textBox3.Enabled = true;
+            else
+                textBox3.Enabled = false;
+        }
+
+        private void pictureBox1_Paint(object sender, PaintEventArgs e)
+        {
+            
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            // Перемещение фигуры на 10 пикселей вправо
+            pictureBox1.Left += 10;
+        }
+
+        private void button7_Click(object sender, EventArgs e)
+        {
+            // Определяем новые координаты для перемещения фигуры
+            int x = pictureBox1.Location.X;
+            int y = pictureBox1.Location.Y + 10; // Шаг вниз на 10 пикселей
+
+            // Перемещаем pictureBox1 на новые координаты
+            pictureBox1.Location = new Point(x, y);
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            pictureBox1.Left -= 10; // Сдвигаем фигуру влево на 10 пикселей
+            pictureBox1.Invalidate(); // Перерисовываем pictureBox1
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            // Перемещаем фигуру вверх на 10 пикселей
+            pictureBox1.Top -= 10;
+
+            // Перерисовываем PictureBox1
+            pictureBox1.Invalidate();
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+
+        }
+    }
+}
+
+public class parallelogram : rectangle
+{
+    public int angle { get; set; }
+    public parallelogram(int length, int width, int angle) : base(length, width)
+    {
+        this.angle = angle;
+    }
+
+    public override void Draw(int length, int weigth, PictureBox pictureBox)
+    {
+        base.Draw(length, weigth, pictureBox);
+        Bitmap bmp = new Bitmap(pictureBox.Width, pictureBox.Height);
+        
+
+        using (Graphics g = Graphics.FromImage(bmp))
+        {
+            Point[] parallelogramPoints = { new Point(10, 10), new Point(10 + (int)length, 10), new Point(20 + (int)length, 10 + (int)width), new Point(20, 10 + (int)width)};
+            g.DrawPolygon(Pens.Black, parallelogramPoints);
+        }
+        pictureBox.Image = bmp;
+    }
+    
+
+    public override double GetArea()
+    {
+        return length * width * angle;
+
+    }
+}
+
+public class rectangle
+{
+    public int length { get; set; }
+    public int width { get; set; }
+    public rectangle(int length, int width)
+    {
+        this.length = length;
+        this.width = width;
+
+    }
+    public virtual void Draw(int length, int weigth, PictureBox pictureBox)
+    {
+        Rectangle rect = new Rectangle(10, 10, length, weigth);
+        Bitmap bmp = new Bitmap(pictureBox.Width, pictureBox.Height);
+        Pen pen = new Pen(Color.Blue);
+        using (Graphics g = Graphics.FromImage(bmp))
+        {
+            g.DrawRectangle(pen, rect);
+        }
+        pictureBox.Image = bmp;
+    }
+
+    public virtual double GetArea()
+    {
+        return length * width;
+    }
+
+    public void Move(int dx, int dy)
+    {
+        length += dx;
+        width += dy;
+    }
+
+    public void Rotate()
+    {
+        int temp = length;
+        length = width;
+        width = temp;
+    }
+}
+
+public class trapeze : rectangle
+{
+    public Rectangle rectangle; // nеременная для хранения прямоугольника трапеции
+    public int angle { get; set; }
+    public trapeze(int length, int width, int angle) : base(length, width)
+    {
+        this.angle = angle;
+    }
+
+    public override void Draw(int length, int weigth, PictureBox pictureBox)
+    {
+        base.Draw(length, width, pictureBox);
+        Bitmap bmp = new Bitmap(pictureBox.Width, pictureBox.Height);
+
+        int height = Math.Abs(rectangle.Top - rectangle.Bottom);
+        using (Graphics g = Graphics.FromImage(bmp))
+        {
+            Point[] Points = { new Point(10 - length/2, 10 - height / 2),
+                        new Point(10 + length/2, 10 - height / 2),
+                        new Point(10 + width / 2, 10 + height / 2),
+                        new Point(10 - width / 2, 10 + height / 2) };
+            g.DrawPolygon(Pens.Black, Points);
+        }
+        pictureBox.Image = bmp;
+    }
+    
+    public override double GetArea()
+    {
+        // Вычисление оснований и высоты равнобедренной трапеции
+        double base1 = Math.Abs(rectangle.Left - rectangle.Right);
+        double base2 = Math.Abs(rectangle.Left + rectangle.Width / 4 - rectangle.Left + 3 * rectangle.Width / 4);
+        double height = Math.Abs(rectangle.Top - rectangle.Bottom);
+
+        // Вычисление площади равнобедренной трапеции
+        return 0.5 * (base1 + base2) * height;
+    }
+
+    public void Move(int deltaX, int deltaY)
+    {
+        // Перемещение равнобедренной трапеции на заданное смещение
+        Rectangle rect = new Rectangle(rectangle.Left + deltaX, rectangle.Top + deltaY, rectangle.Width, rectangle.Height);
+    }
+
+    public void Rotate(double angle)
+    {
+        // Предварительные расчеты для поворота равнобедренной трапеции
+        double radianAngle = angle * Math.PI / 180;
+        Point center = new Point(rectangle.Left + rectangle.Width / 2, rectangle.Top + rectangle.Height / 2);
+
+        Point[] rotatedPoints = new Point[4];
+        for (int i = 0; i < 4; i++)
+        {
+            // Поворот вершин трапеции на указанный угол
+            int newX = (int)((rectangle.Left + i % 2 * 3 * rectangle.Width / 4 - center.X) * Math.Cos(radianAngle)
+                - (rectangle.Top + i / 2 * rectangle.Height - center.Y) * Math.Sin(radianAngle) + center.X);
+            int newY = (int)((rectangle.Left + i % 2 * 3 * rectangle.Width / 4 - center.X) * Math.Sin(radianAngle)
+                + (rectangle.Top + i / 2 * rectangle.Height - center.Y) * Math.Cos(radianAngle) + center.Y);
+
+            rotatedPoints[i] = new Point(newX, newY);
+        }
+    }
+}
+
+//автотесты
+namespace UnitTestProject1
+{
+    [TestClass]
+    public class UnitTest1
+    {
+        [TestMethod]
+        public void Draw_trapeze()
+        {
+            int length = 100;
+            int width = 50;
+            PictureBox pictureBox = new PictureBox();
+            trapeze trapeze = new trapeze(length, width, 45); 
+            trapeze.Draw(length, width, pictureBox);
+            Bitmap bmp = (Bitmap)pictureBox.Image;
+            Assert.IsNotNull(bmp);
+        }
+
+        [TestMethod]
+        public void GetArea_trapeze()
+        {
+            trapeze trapeze = new trapeze(length: 100, width: 50, angle: 45);
+            trapeze.rectangle = new Rectangle(0, 0, 100, 50); 
+            double area = trapeze.GetArea();
+            Assert.AreEqual(5000, area); // nредположительное значение площади трапеции, рассчитанное вручную
+        }
+
+        [TestMethod]
+        public void TestDraw()
+        {
+            int length = 100;
+            int width = 50;
+            parallelogram parallelogram = new parallelogram(length, width, 30); // Длина, ширина и угол для теста
+            PictureBox pictureBox = new PictureBox();
+            parallelogram.Draw(length, width, pictureBox);
+            Bitmap bmp = (Bitmap)pictureBox.Image;
+            Assert.IsNotNull(bmp);
+        }
+
+        [TestMethod]
+        public void TestGetArea()
+        {
+            parallelogram parallelogram = new parallelogram(10, 20, 30); 
+            double area = parallelogram.GetArea();
+            Assert.AreEqual(6000, area); 
+        }
+
+        [TestMethod]
+        public void TestConstructor()
+        {
+            parallelogram parallelogram = new parallelogram(10, 20, 30);
+            Assert.AreEqual(10, parallelogram.length);
+            Assert.AreEqual(20, parallelogram.width);
+            Assert.AreEqual(30, parallelogram.angle);
+        }
+
+        [TestMethod]
+        public void TestDraw_rect()
+        {
+            int length = 18;
+            int width = 58;
+            rectangle rr = new rectangle(length, width); // Длина, ширина и угол для теста
+            PictureBox pictureBox = new PictureBox();
+            rr.Draw(length, width, pictureBox);
+            Bitmap bmp = (Bitmap)pictureBox.Image;
+            Assert.IsNotNull(bmp);
+        }
+
+        [TestMethod]
+        public void TestGetArea_rect()
+        {
+            int length = 10;
+            int width = 20;
+            rectangle rr = new rectangle(length, width); 
+            double area = rr.GetArea();
+            Assert.AreEqual(200, area); // Ожидаемая площадь для заданных параметров (10 * 20)
+        }
+
+        [TestMethod]
+        public void TestMove()
+        {
+            int length = 10;
+            int width = 20;
+            rectangle rr = new rectangle(length, width); // Длина и ширина для теста
+            int deltaX = 5;
+            int deltaY = 10;
+            rr.Move(deltaX, deltaY);
+            Assert.AreEqual(15, rr.length);
+            Assert.AreEqual(30, rr.width);
+        }
+    }
+}
