@@ -1,0 +1,135 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace лаб2
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            sokrat funk = new sokrat();
+            if (radioButton1.Checked == true)
+            {
+                int chisl = int.Parse(textBox1.Text);
+                int znam = int.Parse(textBox2.Text);
+                funk.Simplify(chisl, znam);
+                if (funk.Part > 0)
+                    label3.Text = "Целая часть = " + funk.Part;
+                else
+                    label3.Text = "Целая часть отсутствует";
+                label4.Text = "Сокращенная дробь = " + funk.Ostatok + " / " + funk.SokrZnam;
+            }
+            if (radioButton2.Checked == true)
+            {
+                OpenFileDialog openFileDialog1 = new OpenFileDialog();
+                if (openFileDialog1.ShowDialog() == DialogResult.OK)
+                {
+                    string[] lines = File.ReadAllLines(openFileDialog1.FileName);
+                    foreach (var parts in lines)
+                    {
+                        string[] part = parts.Split(' ');
+                        int chislFromFile = int.Parse(part[0]);
+                        int znamFromFile = int.Parse(part[1]);
+                        funk.Simplify(chislFromFile, znamFromFile);                       
+                        label3.Text = "Сокращенные дроби:";
+                        label4.Text += chislFromFile + " / "+ znamFromFile + "       " + funk.SokrChisl + " / " + funk.SokrZnam + "\n";
+                    }
+                }
+                
+            }
+        }
+    }
+}
+
+public class sokrat
+{
+    public int Part { get; private set; }
+    public int Ostatok { get; private set; }
+    public int SokrZnam { get; private set; }
+    public int SokrChisl { get; private set; }
+
+    public void Simplify(int chisl, int znam)
+    {
+        int Delit = Sokr(chisl, znam);
+        SokrChisl = chisl / Delit;
+        SokrZnam = znam / Delit;
+        Part = SokrChisl / SokrZnam;
+        Ostatok = SokrChisl % SokrZnam;
+    }
+
+    public int Sokr(int a, int b)
+    {
+        while (b != 0)
+        {
+            int chislo = b;
+            b = a % b;
+            a = chislo;
+        }
+        return a;
+    }
+}
+
+// автотесты
+namespace test
+{
+    [TestClass]
+    public class UnitTest1
+    {
+       
+        [TestMethod]
+        public void TestMethod1()
+        {//проверка вычисления целой части и остатка
+            int chisl = 10;
+            int znam = 5;
+            sokrat ss = new sokrat();
+            ss.Simplify(chisl, znam);
+            Assert.AreEqual(2, ss.Part);
+            Assert.AreEqual(0, ss.Ostatok);
+        }
+
+        [TestMethod]
+        public void TestMethod2()
+        {//как считает разные знаки
+            int chisl = -10;
+            int znam = 5;
+            sokrat ss = new sokrat();
+            ss.Simplify(chisl, znam);
+            Assert.AreEqual(-2, ss.Part);
+            Assert.AreEqual(0, ss.Ostatok);
+        }
+
+        [TestMethod]
+        public void TestMethod3()
+        {//проверка на 0 провальная
+            int chisl = 4;
+            int znam = 0;
+            sokrat ss = new sokrat();
+            ss.Simplify(chisl, znam);
+            Assert.AreEqual(6, ss.Part);
+            Assert.AreEqual(0, ss.Ostatok);
+        }
+
+        [TestMethod]
+        public void TestMethod4()
+        {//провальный тест метода проверки целой части 
+            int a = 32;
+            int b = 4;
+            sokrat ss = new sokrat();
+            ss.Sokr(a, b);
+            Assert.AreEqual(9, ss.Part);
+        }
+    }
+}
