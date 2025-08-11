@@ -1,0 +1,185 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace lab_10
+{
+    public partial class Form1 : Form
+    {
+        private List<person> objectList = new List<person>();
+
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {//сохранение в файл
+            if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                using (StreamWriter writer = new StreamWriter(saveFileDialog1.FileName))
+                {
+                    foreach (var item in objectList)
+                    {
+                        writer.WriteLine($"{item.Property1}, {item.Property2}, {item.Property3}, {item.Property4}");
+                    }
+                }
+            }
+        }
+
+        //далее для того, чтобы обезопасить пользователя, предусмотрен запрет ввода неверного типа символов
+        private void textBox2_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!(char.IsDigit(e.KeyChar)) || (char.IsControl(e.KeyChar)))
+                e.Handled = true;
+        }
+
+        private void textBox3_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!(char.IsDigit(e.KeyChar)) || (char.IsControl(e.KeyChar)))
+                e.Handled = true;
+        }
+
+
+        private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!(char.IsLetter(e.KeyChar)) || (char.IsControl(e.KeyChar)))
+                e.Handled = true;
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {//добавление данных в ричтекстбокс
+            string comboBoxValue = comboBox1.SelectedItem.ToString();
+            string textBoxValue1 = textBox1.Text;
+            string textBoxValue2 = textBox2.Text;
+            string textBoxValue3 = textBox3.Text;
+
+            person newObj = new person(comboBoxValue, textBoxValue1, textBoxValue2, textBoxValue3);
+            objectList.Add(newObj);
+
+            richTextBox1.Clear();
+            foreach (person obj in objectList)
+            {
+                richTextBox1.AppendText(obj.ToString() + Environment.NewLine);
+            }
+        }
+        //изменение данных
+        private void button2_Click(object sender, EventArgs e)
+        {
+            // получаем индекс текущей строки, выделенной пользователем в RichTextBox
+            int selectionStart = richTextBox1.SelectionStart;
+            int lineIndex = richTextBox1.GetLineFromCharIndex(selectionStart);
+
+            if (lineIndex >= 0 && lineIndex < objectList.Count)
+            {
+                // получаем объект, соответствующий текущей строке
+                var selectedItem = objectList[lineIndex];
+
+                // обновляем свойства объекта на основе введенных пользователем значений в текстовых полях
+                selectedItem.Property1 = comboBox1.Text;
+                selectedItem.Property2 = textBox1.Text;
+                selectedItem.Property3 = textBox2.Text;
+                selectedItem.Property4 = textBox3.Text;
+
+                // обновляем содержимое текстового редактора
+                richTextBox1.Clear();
+            }
+            else
+            {
+                MessageBox.Show("Пожалуйста, выберите объект для редактирования в списке.");
+            }
+        }
+        //удаление данных из ричтекстбокс
+        private void button3_Click(object sender, EventArgs e)
+        {
+            string searchValue = textBox1.Text; // получаем значение для поиска
+
+            // находим объект в списке по заданному значению
+            var foundObject = objectList.FirstOrDefault(item => item.Property2 == searchValue);
+
+            if (foundObject != null)
+            {
+                // удаляем найденный объект из списка
+                objectList.Remove(foundObject);
+
+                // обновляем содержимое текстового редактора
+                richTextBox1.Clear();
+            }
+            else
+            {
+                MessageBox.Show("Объект не найден");
+            }
+
+            
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {//сброс данных в ричтексбокс
+            objectList.Clear(); // очищаем список
+            // очищаем содержимое RichTextBox
+            richTextBox1.Clear();
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {//свойство, добавленное для предупреждения пользователя
+            if (objectList.Count > 0)
+            {
+                DialogResult result = MessageBox.Show("Данные не сохранены. Сохранить их перед выходом?", "Предупреждение", MessageBoxButtons.YesNoCancel);
+                if (result == DialogResult.Yes)
+                {
+                    button4_Click(sender, e);
+                }
+                else if (result == DialogResult.Cancel)
+                {
+                    e.Cancel = true;
+                }
+            }
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            double weight = double.Parse(textBox2.Text);
+            double height= double.Parse(textBox3.Text)/100;
+
+            double bmi = weight / (height * height);
+
+            if (bmi < 17)
+            {
+                label5.Text = "Студент с дефицитом веса";
+            }
+            else
+            {
+                label5.Text = "Студент без дефицита веса";
+            }
+        }
+    }
+}
+
+    class person
+    {
+        public string Property1 { get; set; }
+        public string Property2 { get; set; }
+        public string Property3 { get; set; }
+        public string Property4 { get; set; }
+
+        public person(string prop1, string prop2, string prop3, string prop4)
+        {
+            Property1 = prop1;
+            Property2 = prop2;
+            Property3 = prop3;
+            Property4 = prop4;
+        }
+
+        public override string ToString()
+        {
+            return $"{Property1}, {Property2}, {Property3}, {Property4}";
+        }
+    }
+
